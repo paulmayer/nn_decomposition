@@ -34,19 +34,23 @@ class SyntheticData(Dataset):
     def __len__(self):
         return len(self.data)
         
-def plot_decision_boundary(n, model, train_data):
+def plot_decision_boundary(n, models, train_data, ax=None, fill=True):    
+    if ax is None:
+        fig, ax = plt.subplots(1, figsize=(5, 5))
+        
     xs = np.linspace(-1, 1, n)
     xx, yy = np.meshgrid(xs, xs)
     grid = np.stack((xx, yy))
     grid = grid.T.reshape(-1,2)
     
-    x_grid = torch.from_numpy(grid).float()
-    outputs = torch.nn.Sigmoid()(model(x_grid))
-    predictions = (outputs > 0.5).numpy()
-    y1 = predictions.T[0].reshape(xs.shape[0],xs.shape[0])
-    
-    fig, ax = plt.subplots(1, figsize=(5, 5))
-    ax.contourf(yy, xx, y1, levels=[-1, 0, 1, 2], colors=["white", "black"], alpha=0.3)
+    for model in models:
+        x_grid = torch.from_numpy(grid).float()
+        predictions = (model.predict(x_grid)).numpy()
+        y1 = predictions.T[0].reshape(xs.shape[0],xs.shape[0])
+        if fill:
+            ax.contourf(yy, xx, y1, levels=[-1, 0, 1, 2], colors=["white", "black"], alpha=0.3)
+        else:
+            ax.contourf(yy, xx, y1, alpha=.1)
     
     xs_train = train_data.data.numpy()
     ys_train = train_data.target.int().numpy().reshape(xs_train.shape[0])
@@ -54,6 +58,7 @@ def plot_decision_boundary(n, model, train_data):
     ax.scatter(xs_train[ys_train==1, 0], xs_train[ys_train==1, 1],  color="red", s=1.5)
     ax.scatter(xs_train[ys_train==0, 0], xs_train[ys_train==0, 1],  color="blue", s=1.5)
     ax.set_aspect(1)
+    return ax
     
 def get_accuracy(probabilities, labels):
     predictions = (probabilities > 0.5).int()
